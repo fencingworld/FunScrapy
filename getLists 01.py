@@ -1,10 +1,17 @@
 # coding: UTF-8
-
+import sys
 import httplib
 import urllib
 import urllib2
 import json
 #import demjson
+reload(sys)
+
+sys.setdefaultencoding('utf-8')
+
+'''
+unicode
+'''
 headers = {
 "Host": "www.cninfo.com.cn",
 "Connection":" keep-alive",
@@ -59,8 +66,10 @@ dataDict = json.loads(data)
 urlDownBase = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/download/"
 dataAncmtList = dataDict["announcements"]
 for item in dataAncmtList:
+	setCode = item["secCode"]
+	secName = item["secName"]
 	targetUrl = urlDownBase + item["announcementId"]
-	print targetUrl
+	print setCode+ " " +targetUrl+ " " + secName 
 
 #urllib.urlretrieve(url, name,cbk)  
 ''''
