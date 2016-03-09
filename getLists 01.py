@@ -5,16 +5,6 @@ import urllib
 import urllib2
 import json
 #import demjson
-values = {}
-#values[''] = ""
-values['column'] = "fund_listed"
-values['columnTitle'] = "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
-values['pageNum'] = 2
-values['pageSize'] = 3000
-values['seDate'] = "%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
-params = urllib.urlencode(values) 
-params= "stock=&searchkey=&plate=&category=&trade=&column=fund_listed&columnTitle=%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A&pageNum=2&pageSize=30&tabName=latest&sortName=&sortType=&limit=&showTitle=&exchange=&fundtype=&seDate=%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
-#print params
 headers = {
 "Host": "www.cninfo.com.cn",
 "Connection":" keep-alive",
@@ -30,10 +20,23 @@ headers = {
 "Cookie":"COLLPCK=361493945; JSESSIONID=0E07A2BCD6B917B480DEF5ED76666906"
 } 
 
-DIR = "/cninfo-new/disclosure/fund_listed_latest"
-URL = "www.cninfo.com.cn:80"
+values = {}
+#values[''] = ""
+values['column'] = "fund_listed"
+values['columnTitle'] = "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
+values['pageNum'] = 2
+values['pageSize'] = 30
+values['tabName'] = "latest"
+values['seDate'] = "%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
+params = urllib.urlencode(values) 
+params= "stock=&searchkey=&plate=&category=&trade=&column=fund_listed&columnTitle=%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A&pageNum=2&pageSize=30&tabName=latest&sortName=&sortType=&limit=&showTitle=&exchange=&fundtype=&seDate=%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
+#print params
 
-conn = httplib.HTTPConnection(URL) 
+
+DIR = "/cninfo-new/disclosure/fund_listed_latest"
+hostURL = "www.cninfo.com.cn"
+
+conn = httplib.HTTPConnection(hostURL+":80") 
 while (True):
 	
 	conn.request("POST", DIR, params, headers)  
@@ -49,10 +52,20 @@ while (True):
 
 		headers["Cookie"] =head[0][1]
 	
-
 data = response.read() 
-print data
+dataDict = json.loads(data)
+#dataList=  dataDict.values()
+#urlBase 	= "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/bulletin_detail/true/"
+urlDownBase = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/download/"
+dataAncmtList = dataDict["announcements"]
+for item in dataAncmtList:
+	targetUrl = urlDownBase + item["announcementId"]
+	print targetUrl
+
+#urllib.urlretrieve(url, name,cbk)  
+''''
 score = json.loads(data.decode('UTF-8'))
-print "\n"
 print score
+print type(score)
+'''
 conn.close()
