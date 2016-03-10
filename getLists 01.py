@@ -4,14 +4,14 @@ import httplib
 import urllib
 import urllib2
 import json
+import psycopg2
 #import demjson
 reload(sys)
 
+
 sys.setdefaultencoding('utf-8')
 
-'''
-unicode
-'''
+
 headers = {
 "Host": "www.cninfo.com.cn",
 "Connection":" keep-alive",
@@ -27,19 +27,41 @@ headers = {
 "Cookie":"COLLPCK=361493945; JSESSIONID=0E07A2BCD6B917B480DEF5ED76666906"
 } 
 
-values = {}
-#values[''] = ""
-values['column'] = "fund_listed"
-values['columnTitle'] = "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
-values['pageNum'] = 2
-values['pageSize'] = 30
-values['tabName'] = "latest"
-values['seDate'] = "%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
-params = urllib.urlencode(values) 
-params= "stock=&searchkey=&plate=&category=&trade=&column=fund_listed&columnTitle=%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A&pageNum=2&pageSize=30&tabName=latest&sortName=&sortType=&limit=&showTitle=&exchange=&fundtype=&seDate=%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
-#print params
+fields 	= 	{}
 
 
+
+################################
+
+fields['stock'] 	=  ""      
+fields['searchkey'] =  ""      
+fields['plate'] 	=  ""      
+fields['category'] 	=  ""      
+fields['trade'] 	=  ""      
+fields['column'] 	=  "fund_listed" 
+fields['columnTitle'] = "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
+fields['pageNum'] 	=  133			#max = 133
+fields['pageSize'] 	=  30
+fields['tabName=latest'] = ""
+fields['sortName'] 	=  ""      
+fields['sortType'] 	=  ""      
+fields['limit'] 	=  ""      
+fields['showTitle'] =  ""      
+fields['exchange'] 	=  ""      
+fields['fundtype'] 	=  ""      
+fields['seDate'] 	="%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
+
+params = urllib.urlencode(fields) 
+print params
+
+###############################################
+try:
+	pgdb_conn = pg.connect(dbname = 'kevin_test', host = '192.168.230.128', user = 'dyx1024', passwd = '888888')  
+except Exception, e:
+	print e.args[0]  
+
+
+###############################################
 DIR = "/cninfo-new/disclosure/fund_listed_latest"
 hostURL = "www.cninfo.com.cn"
 
@@ -65,6 +87,10 @@ dataDict = json.loads(data)
 #urlBase 	= "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/bulletin_detail/true/"
 urlDownBase = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/download/"
 dataAncmtList = dataDict["announcements"]
+print type (dataAncmtList)
+print dataAncmtList[0].items()
+print dataAncmtList 
+print len(dataAncmtList)
 for item in dataAncmtList:
 	setCode = item["secCode"]
 	secName = item["secName"]
