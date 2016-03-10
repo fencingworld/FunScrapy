@@ -4,7 +4,9 @@ import httplib
 import urllib
 import urllib2
 import json
-import psycopg2
+
+#import psycopg2
+import MySQLdb
 #import demjson
 reload(sys)
 
@@ -55,10 +57,22 @@ params = urllib.urlencode(fields)
 print params
 
 ###############################################
-try:
-	pgdb_conn = pg.connect(dbname = 'kevin_test', host = '192.168.230.128', user = 'dyx1024', passwd = '888888')  
-except Exception, e:
-	print e.args[0]  
+# 打开数据库连接
+db = MySQLdb.connect("127.0.0.1","root","root","funscrapy" ,charset='utf8')
+
+# 使用cursor()方法获取操作游标 
+cursor = db.cursor()
+
+# 使用execute方法执行SQL语句
+cursor.execute("SELECT VERSION()")
+
+# 使用 fetchone() 方法获取一条数据库。
+data = cursor.fetchone()
+
+print "Database version : %s " % data
+
+# 关闭数据库连接
+
 
 
 ###############################################
@@ -89,9 +103,61 @@ urlDownBase = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/downlo
 dataAncmtList = dataDict["announcements"]
 print type (dataAncmtList)
 print dataAncmtList[0].items()
-print dataAncmtList 
+#print dataAncmtList 
 print len(dataAncmtList)
+ing =  "My name is %s and weight is %d kg!" % ('Zara', 21) 
+print ing
 for item in dataAncmtList:
+	# 使用cursor()方法获取操作游标 
+	print "################################"
+	print item
+	cursor = db.cursor()
+	# SQL 插入语句
+	sql = """
+		INSERT INTO `funscrapy`.`announcements` (
+		`adjunctSize`, `adjunctType`, `adjunctUrl`, 
+		`announcementContent`, `announcementId`, `announcementTime`, 
+		`announcementTitle`, `announcementType`, `announcementTypeName`, 
+		`associateAnnouncement`, `batchNum`, `columnId`,
+		`id`, `important`, `orgId`, 
+		`pageColumn`, `secCode`, `secName`, 
+		`storageTime`) 
+		VALUES (
+		'%s', '%s', '%s',
+		%s, '%s', '%s',
+		'%s', '%s', %s,
+		%s, '%s', '%s', 
+		%s, '%s', '%s', 
+		'%s', '%s', '%s',
+		'%s')  
+		""" % ( \
+		item["adjunctSize"] , item["adjunctType"] , item["adjunctUrl"] , \
+		"NULL"   , item["announcementId"] , item["announcementTime"] ,\
+		item["announcementTitle"] , item["announcementType"] , "NULL" , \
+		"NULL" , item["batchNum"] , item["columnId"] , \
+		"NULL", 0, item["orgId"] , \
+		item["pageColumn"] , item["secCode"] , item["secName"] , \
+		item["storageTime"] )
+	print "##########==================="
+	sql1 = """
+		INSERT INTO `funscrapy`.`announcements` (
+		`announcementId`, `secCode`, `secName`) 
+		VALUES ('%s','%s','%s')  
+		""" % ( item["announcementId"] , item["secCode"],item["secName"] )
+	print sql
+
+	try:
+   # 执行sql语句
+   		cursor.execute(sql)
+   # 提交到数据库执行
+   		db.commit()
+   		print "happy!!!!!!!!!!!!!!!!!!!!!!!!"
+	except Exception, e:
+   # Rollback in case there is any error
+   		print "nimeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   		print e
+   		db.rollback()
+
 	setCode = item["secCode"]
 	secName = item["secName"]
 	targetUrl = urlDownBase + item["announcementId"]
@@ -104,3 +170,4 @@ print score
 print type(score)
 '''
 conn.close()
+db.close()
