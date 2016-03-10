@@ -10,7 +10,11 @@ import MySQLdb
 #import demjson
 reload(sys)
 
-
+typeTup = (["fund","最新"],
+	["fund_listed","年度报告"],
+	["fund_sse","半年度报告"],
+	["fund_other","季度报告"]
+	)
 sys.setdefaultencoding('utf-8')
 
 
@@ -41,17 +45,17 @@ fields['plate'] 	=  ""
 fields['category'] 	=  ""      
 fields['trade'] 	=  ""      
 fields['column'] 	=  "fund_listed" 
-fields['columnTitle'] = "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
+fields['columnTitle'] 		= "%E5%9F%BA%E9%87%91%E5%85%AC%E5%91%8A"
 fields['pageNum'] 	=  1	#max = 133
 fields['pageSize'] 	=  30
-fields['tabName=latest'] = ""
+fields['tabName=latest']	= ""
 fields['sortName'] 	=  ""      
 fields['sortType'] 	=  ""      
 fields['limit'] 	=  ""      
 fields['showTitle'] =  ""      
 fields['exchange'] 	=  ""      
 fields['fundtype'] 	=  ""      
-fields['seDate'] 	="%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
+fields['seDate'] 	=  "%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
 
 params = urllib.urlencode(fields) 
 #print params
@@ -77,14 +81,16 @@ print "Database version : %s " % data
 countInsert 	= 0
 countRollBack 	= 0
 ###############################################
-DIR = "/cninfo-new/disclosure/fund_listed_latest"
+DIR = "/cninfo-new/disclosure/fund_listed_latest"# dir 1最新
 hostURL = "www.cninfo.com.cn"
 
 conn = httplib.HTTPConnection(hostURL+":80") 
 
-for i in range(1,135):
-	fields['pageNum'] = i
-	print "get page : %d" % i 
+idx =	0
+while (True):
+	idx = idx + 1
+	fields['pageNum'] = idx
+	print "get page : %d" % idx
 	params = urllib.urlencode(fields) 
 	while (True):
 		conn.request("POST", DIR, params, headers)  
@@ -104,7 +110,8 @@ for i in range(1,135):
 	dataDict = json.loads(data)
 	#dataList=  dataDict.values()
 	#urlBase 	= "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/bulletin_detail/true/"
-	urlDownBase = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/download/"
+	targetDownloadBaseUrl = "http://www.cninfo.com.cn/cninfo-new/disclosure/fund_listed/download/"
+	targetName	= ""
 	dataAncmtList = dataDict["announcements"]
 	#print type (dataAncmtList)
 	#print dataAncmtList[0].items()
@@ -118,6 +125,9 @@ for i in range(1,135):
 		#print item
 		#cursor = db.cursor()
 		# SQL 插入语句
+		targetUrl 	= targetDownloadBaseUrl + item["announcementId"]
+		targetTitle =  item["secCode"] +" "+ item["secName"] +" "+ item["announcementTitle"]
+
 		sql = """
 			INSERT INTO `funscrapy`.`announcements` (
 			`adjunctSize`, `adjunctType`, `adjunctUrl`, 
@@ -126,7 +136,7 @@ for i in range(1,135):
 			`associateAnnouncement`, `batchNum`, `columnId`,
 			`id`, `important`, `orgId`, 
 			`pageColumn`, `secCode`, `secName`, 
-			`storageTime`) 
+			`storageTime`,`targetUrl`, `targetTitle`) 
 			VALUES (
 			'%s', '%s', '%s',
 			%s, '%s', '%s',
@@ -134,7 +144,7 @@ for i in range(1,135):
 			%s, '%s', '%s', 
 			%s, '%s', '%s', 
 			'%s', '%s', '%s',
-			'%s')  
+			'%s', '%s','%s')  
 			""" % ( \
 			item["adjunctSize"] , item["adjunctType"] , item["adjunctUrl"] , \
 			"NULL"   , item["announcementId"] , item["announcementTime"] ,\
@@ -142,7 +152,7 @@ for i in range(1,135):
 			"NULL" , item["batchNum"] , item["columnId"] , \
 			"NULL", 0, item["orgId"] , \
 			item["pageColumn"] , item["secCode"] , item["secName"] , \
-			item["storageTime"] )
+			item["storageTime"],targetUrl,targetTitle)
 	#	print "##########==================="
 		sql1 = """
 			INSERT INTO `funscrapy`.`announcements` (
@@ -165,6 +175,8 @@ for i in range(1,135):
 	   		db.rollback()
 	   		countRollBack = countRollBack  + 1
 	print "[countInsert] = %d [countRollBack] = %d " % (countInsert,countRollBack)
+	if len(dataAncmtList) < 30 :
+		break
 """
 	setCode = item["secCode"]
 	secName = item["secName"]
@@ -179,3 +191,6 @@ print type(score)
 '''
 
 db.close()
+
+for typeIdx in typeTup:
+	saveUrlToDB(typeIdx)
