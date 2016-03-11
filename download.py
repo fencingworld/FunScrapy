@@ -5,6 +5,7 @@ import urllib
 import urllib2 
 import random
 import MySQLdb
+import os
 reload(sys)
 sys.setdefaultencoding('utf-8')
 #import requests  
@@ -28,25 +29,38 @@ def cbk(NumBlockGet, SizeBlock, SizeFile):
 
 
 class downloadThread(threading.Thread):
-    def __init__(self,url,title,currtask):
+    def __init__(self,url,title,currtask,adjunctSize):
         threading.Thread.__init__(self)
         self.url    = url
         self.title  = title
         self.currtask = currtask
+        self.adjunctSize = adjunctSize
     def run(self):
         #print self.url.encode('utf-8') + " " + self.title.encode('utf-8') 
         print "downloading task : %d" % currtask
         #time.sleep(random.uniform(0.1,0.9))
         #print "exit title"
-        try :
+        while True:
 
-          u = urllib.urlopen(self.url)
-          data = u.read()
-          f = open(self.title+".pdf", 'wb')
-          f.write(data)
-          f.close()
-        except Exception, e:
-          print e
+        
+          try :
+
+            u = urllib.urlopen(self.url)
+            data = u.read()
+            f = open(self.title+".pdf", 'wb')
+            f.write(data)
+            f.close()
+
+            fileSize = os.path.getsize(self.title+".pdf")
+            print "%d\t\t%d" % (fileSize,self.adjunctSize*1024)
+            
+            if fileSize/1024 - self.adjunctSize < 10:
+              break
+            else :
+              os.remove(self.title+".pdf")
+          except Exception, e:
+            print e
+            print "try again %d" % currtask
         
 
 
@@ -71,10 +85,9 @@ data = cursor.fetchone()
 print "Database version : %s " % data
 finish = 0
 cursor = db.cursor()
-sql =   "SELECT targetUrl,targetTitle,adjunctSize\
+sql =   "SELECT targetUrl,targetTitle,adjunctSize,adjunctSize\
          FROM   announcements \
-         WHERE  download = 0 and typeMark = 1\
-         LIMIT  100"
+         WHERE  download = 0 and typeMark = 0"
 try:
     # 执行SQL语句
     cursor.execute(sql)
@@ -86,11 +99,12 @@ try:
    
     while True:
       threadNum = len(threading.enumerate())
-      if threadNum < 30 :
+      if threadNum < 40 :
         print "tread numbers : %d" % (threadNum)
         url   = results[currtask][0]
         title = results[currtask][1]
-        task  = downloadThread(url,title,currtask)
+        adjunctSize = results[currtask][2]
+        task  = downloadThread(url,title,currtask,adjunctSize)
         task.start()
         currtask +=1
         if currtask >= taskNum:
