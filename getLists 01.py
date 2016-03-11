@@ -17,12 +17,12 @@ typeTup = (["fund","最新"],
 	)
 sys.setdefaultencoding('utf-8')
 
-def saveUrlToDB(idxtype):
-
-	print idxtype[1].encode('utf-8')
+def saveUrlToDB(idxtype,typeId):
+	#print 'd'
+	#print idxtype[1].encode('utf-8')
 	targetDownloadBaseUrl = \
 		"http://www.cninfo.com.cn/cninfo-new/disclosure/"+idxtype[0]+"/download/"
-	print targetDownloadBaseUrl
+	#print targetDownloadBaseUrl
 	#return
 	headers = {
 	"Host": "www.cninfo.com.cn",
@@ -53,7 +53,7 @@ def saveUrlToDB(idxtype):
 	fields['sortName'] 	=  ""      
 	fields['sortType'] 	=  ""      
 	fields['limit'] 	=  ""      
-	fields['showTitle'] =  ""      
+	fields['showTitle'] =  ""
 	fields['exchange'] 	=  ""      
 	fields['fundtype'] 	=  ""      
 	fields['seDate'] 	=  "%E8%AF%B7%E9%80%89%E6%8B%A9%E6%97%A5%E6%9C%9F"
@@ -82,8 +82,11 @@ def saveUrlToDB(idxtype):
 	countInsert 	= 0
 	countRollBack 	= 0
 
-	DIR = "/cninfo-new/disclosure/"+idxtype[0]# dir 1最新################################
+	DIR = "/cninfo-new/disclosure/"+idxtype[0]+"_latest"# dir 1最新################################
 	hostURL = "www.cninfo.com.cn"
+	#print DIR
+	#print params
+	#print headers
 
 	conn = httplib.HTTPConnection(hostURL+":80") 
 
@@ -91,22 +94,26 @@ def saveUrlToDB(idxtype):
 	while (True):
 		idx = idx + 1
 		fields['pageNum'] = idx
-		print "get page : %d" % idx
+		#print "get page : %d" % idx
 		params = urllib.urlencode(fields) 
 		while (True):
-			conn.request("POST", DIR, params, headers)  
-			response = conn.getresponse()  
-			print response.status, response.reason 
-			
-			if response.status==200:
-				break
-			if response.status==307:
-				head = response.getheaders()
-				print head [0][1]
+			try:
+				conn.request("POST", DIR, params, headers)  
+				response = conn.getresponse()  
+				print response.status, response.reason 
+				
+				if response.status==200:
+					break
+				if response.status==307:
+					head = response.getheaders()
+					print head [0][1]
 
-				headers["Cookie"] =head[0][1]
+					headers["Cookie"] =head[0][1]
+			except Exception, e:
+				print e
 			
 		data = response.read() 
+		#print type(data) 
 		conn.close()
 		dataDict = json.loads(data)
 		#dataList=  dataDict.values()
@@ -138,7 +145,8 @@ def saveUrlToDB(idxtype):
 				`associateAnnouncement`, `batchNum`, `columnId`,
 				`id`, `important`, `orgId`, 
 				`pageColumn`, `secCode`, `secName`, 
-				`storageTime`,`targetUrl`, `targetTitle`) 
+				`storageTime`,`targetUrl`, `targetTitle`,
+				`download`, `typeMark`) 
 				VALUES (
 				'%s', '%s', '%s',
 				%s, '%s', '%s',
@@ -146,7 +154,8 @@ def saveUrlToDB(idxtype):
 				%s, '%s', '%s', 
 				%s, '%s', '%s', 
 				'%s', '%s', '%s',
-				'%s', '%s','%s')  
+				'%s', '%s','%s',
+				'%s','%s') 
 				""" % ( \
 				item["adjunctSize"] , item["adjunctType"] , item["adjunctUrl"] , \
 				"NULL"   , item["announcementId"] , item["announcementTime"] ,\
@@ -154,7 +163,8 @@ def saveUrlToDB(idxtype):
 				"NULL" , item["batchNum"] , item["columnId"] , \
 				"NULL", 0, item["orgId"] , \
 				item["pageColumn"] , item["secCode"] , item["secName"] , \
-				item["storageTime"],targetUrl,targetTitle)
+				item["storageTime"],targetUrl,targetTitle,
+				0,typeId) 
 		#	print "##########==================="
 			sql1 = """
 				INSERT INTO `funscrapy`.`announcements` (
@@ -176,7 +186,7 @@ def saveUrlToDB(idxtype):
 		   		#print e
 		   		db.rollback()
 		   		countRollBack = countRollBack  + 1
-		print "[countInsert] = %d [countRollBack] = %d " % (countInsert,countRollBack)
+		print "[countInsert] = %d [countRollBack] = %d type = %d" % (countInsert,countRollBack,typeId)
 		if len(dataAncmtList) < 30 :
 			break
 	"""
@@ -194,7 +204,10 @@ def saveUrlToDB(idxtype):
 
 	db.close()
 	return #saveUrlToDB
-h=0
+typeId=0
 for typeIdx in typeTup:
-	saveUrlToDB(typeIdx,h)
-	h = h+1
+	#if typeId == 0:
+	#	typeId = typeId +1
+	#	continue
+	saveUrlToDB(typeIdx,typeId)
+	typeId = typeId+1
