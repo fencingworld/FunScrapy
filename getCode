@@ -1,0 +1,111 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+'''
+Created on 2016年4月6日
+
+@author: dell
+'''
+import sys
+import httplib
+import urllib
+import urllib2
+import json
+import MySQLdb
+import cookielib
+import re
+
+from bs4 import BeautifulSoup
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+headers = {
+"Host": "www.cninfo.com.cn",
+"Connection": "keep-alive",
+"Cache-Control": "max-age=0",
+"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+"Upgrade-Insecure-Requests": 1,
+"User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.110 Safari/537.36",
+"Referer": "http://www.cninfo.com.cn/information/sz/mb/szmblclist.html?COLLCC=1012414841&",
+"Accept-Encoding": "gzip, deflate, sdch",
+"Accept-Language": "zh-CN,zh;q=0.8",
+"Cookie": "JSESSIONID=A3CB012ED42108CBC6BB8888F01EC986"
+} 
+fields     =     {}
+StockType=['深市主板','中小企业板','创业板','沪市主板','香港主板','香港创业板']
+#fields['COLLCC']     =  "1012414841"   
+sti=-1
+DIRs=["/information/sz/mb/szmblclist.html?COLLCC=1012414841&",\
+     "/information/sz/sme/szsmelclist.html?COLLCC=1012964833&",\
+     "/information/sz/cn/szcnlclist.html?COLLCC=1013081144&",\
+     "/information/sh/mb/shmblclist.html",\
+     "/information/hk/mb/hkmblclist.html",\
+     "/information/hk/gem/hkgemlclist.html"]
+
+#DIR = "/information/sz/mb/szmblclist.html?COLLCC=1012414841&"
+for DIR in DIRs :
+    sti = sti+1
+    hostURL = "www.cninfo.com.cn"
+    conn = httplib.HTTPConnection(hostURL+":80") 
+    params = urllib.urlencode(fields) 
+    while (True):
+        try:
+            conn.request("POST", DIR, params, headers)  
+            response = conn.getresponse()  
+            print response.status, response.reason 
+            
+            if response.status==200:
+                break
+            if response.status==307:
+                head = response.getheaders()
+                print head [0][1]
+    
+                headers["Cookie"] =head[0][1]
+        except Exception, e:
+            print e
+        
+    data = response.read()
+  
+    #data=unicode(data,"utf-8")
+    conn.close()
+    #================================================================
+    print type(data)
+    
+    db = MySQLdb.connect("127.0.0.1","root","root","funscrapy" ,charset='utf8')
+    cursor = db.cursor()
+    cursor.execute("SELECT VERSION()")
+    d= cursor.fetchone()
+    print "Database version : %s " % d
+
+    soup = BeautifulSoup(data,'html.parser')
+    td_tag =soup.find_all("td")
+    #print td_tag
+    cSuccsee = 0
+    cFail =0
+    print len(td_tag)
+    for i in td_tag:
+        item = i.get_text()
+        print item,isinstance(item, unicode) 
+        item = item.split(" ",1)
+        if type(item[0]).__name__!="unicode":
+            item[0]=unicode(item[0],"utf-8")
+        if type(item[1]).__name__!="unicode":
+            item[1]=unicode(item[1],"utf-8")
+        sCode = item[0]
+        
+        sName = item[1]
+        
+        
+        sql = "INSERT INTO `funscrapy`.`stockcode` (`sCode`, `sName`, `sType`,`sTid`)\
+         VALUES ('%s', '%s', '%s', '%s');" %(sCode,sName,StockType[sti],sti)
+        try:
+        
+            cursor.execute(sql)
+            print sName
+            cSuccsee = cSuccsee +1
+            db.commit()
+        except Exception, e:
+            #print e
+            cFail = cFail +1
+            db.rollback()
+    print cSuccsee ,cFail,cSuccsee +cFail
+    
