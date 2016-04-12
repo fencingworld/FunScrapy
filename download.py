@@ -5,6 +5,7 @@ import urllib
 import urllib2 
 import random
 import MySQLdb
+import requests  
 import os
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -29,99 +30,108 @@ def cbk(NumBlockGet, SizeBlock, SizeFile):
 
 
 class downloadThread(threading.Thread):
-    def __init__(self,url,title,currtask,adjunctSize):
+    def __init__(self,url,title,currtaskid,adjunctSize):
+
         threading.Thread.__init__(self)
         self.url    = url
-        self.title  = title
-        self.currtask = currtask
+        self.title  = title#.replace("*", "")
+        self.currtaskid = currtaskid
         self.adjunctSize = adjunctSize
     def run(self):
-        #print self.url.encode('utf-8') + " " + self.title.encode('utf-8') 
-        print "downloading task : %d" % currtask
-        #time.sleep(random.uniform(0.1,0.9))
-        #print "exit title"
+        self.title = self.title.replace("*", "")
+        ic=0
         while True:
-
-        
-          try :
-
-            u = urllib.urlopen(self.url)
-            data = u.read()
-            f = open(self.title+".pdf", 'wb')
-            f.write(data)
-            f.close()
-
-            fileSize = os.path.getsize(self.title+".pdf")
-            print "%d\t\t%d" % (fileSize,self.adjunctSize*1024)
+            ic= ic+ 1
+            print "[%d]  for  (%d)  times" % (self.currtaskid ,ic)
             
-            if fileSize/1024 - self.adjunctSize < 10:
-              break
-            else :
-              os.remove(self.title+".pdf")
-          except Exception, e:
-            print e
-            print "try again %d" % currtask
+            try :
+                """
+                u = urllib.urlopen("http://"+self.url)
+                data = u.read()
+                print data
+                f = open(self.title+".pdf", 'wb')
+                f.write(data)
+                f.close()
+                """
+                r = requests.get("http://"+self.url)   
+                with open(self.title+".pdf", "wb") as code:       
+                    code.write(r.content)
+                    
+                """
+                if os.path.exists(self.title+".pdf")==False:
+                    print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                else:
+                    print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                """
+                fileSize = os.path.getsize(self.title+".pdf")
+                print fileSize
+                
+                
+                if abs(fileSize/1024)  > 2:
+                    print "[%d]  success in (%d)" % (self.currtaskid ,ic)
+                    break
+                else :
+                    os.remove(self.title+".pdf")
+                
+                
+                #break
+            except Exception, e:
+                print e
+                
+            
         
 
 
-
-
+os.mkdir("newdir")
+os.chdir("newdir")
 url = 'http://www.cninfo.com.cn//cninfo-new/disclosure/fund_listed/download/1201902743'
 
-name =  "968004 968004 摩根总收益债.pdf"
-name = name.decode('UTF-8')
-print "downloading with urllib"
-db = MySQLdb.connect("127.0.0.1","root","root","funscrapy" ,charset='utf8')
 
-# 使用cursor()方法获取操作游标 
+print "downloading with urllib"
+db = MySQLdb.connect("127.0.0.1","root","root","funscrapy" ,charset='utf8') 
 cursor = db.cursor()
 
-# 使用execute方法执行SQL语句
 cursor.execute("SELECT VERSION()")
-
-# 使用 fetchone() 方法获取一条数据库。
 data = cursor.fetchone()
-
 print "Database version : %s " % data
+
 finish = 0
 cursor = db.cursor()
-sql =   "SELECT targetUrl,targetTitle,adjunctSize,adjunctSize\
-         FROM   announcements \
-         WHERE  download = 0 and typeMark = 0"
+sql =   """
+SELECT targetUrl,targetTitle,adjunctSize
+FROM   announcements_copy 
+WHERE  download = 0 and typeMark = 1 
+    and targetTitle not like "%摘要%"  
+    and targetTitle not like "%取消%"   
+    and targetTitle not like "%英文%"   
+    ORDER BY secCode
+    """
 try:
-    # 执行SQL语句
     cursor.execute(sql)
-    # 获取所有记录列表
     results  = cursor.fetchall()
+    db.close()
+    
     taskNum  = len(results)
     currtask = 0
-    #print type(results)
-   
     while True:
-      threadNum = len(threading.enumerate())
-      if threadNum < 40 :
-        print "tread numbers : %d" % (threadNum)
-        url   = results[currtask][0]
-        title = results[currtask][1]
-        adjunctSize = results[currtask][2]
-        task  = downloadThread(url,title,currtask,adjunctSize)
-        task.start()
-        currtask +=1
-        if currtask >= taskNum:
-          break
+        
+        threadNum = len(threading.enumerate())
+        if threadNum < 400 :
+            #print "tread numbers : %d" % (threadNum)
+            url   = results[currtask][0]
+            title = results[currtask][1]
+            adjunctSize = results[currtask][2]
+            task  = downloadThread(url,title,currtask,adjunctSize)
+            task.start()
+            currtask +=1
+            #print "currtask",currtask
+            if currtask >= taskNum:
+                break
     print "exit main process"
-   #for row in results:
-      #print finish 
-      #print row[1].decode('utf8')
-      #print row[2]
-    #  finish = finish + 1
 
-      #urllib.urlretrieve(row[0], row[1]+ ".pdf",cbk)   
 except Exception, e:
         print e
         print "Error: unable to fecth data"
-
-# 关闭数据库连接
-db.close()
+        db.close()
 
 print "Finish"
