@@ -72,7 +72,7 @@ def MyParser(ORIPath,title,RESPath):
         link.append(data)    
     
     
-    db = MySQLdb.connect("localhost","root","root","funscrapy" )
+    db = MySQLdb.connect("localhost","root","root","funscrapy" ,charset="utf8")
 
     cursor = db.cursor()
 
@@ -88,6 +88,7 @@ def MyParser(ORIPath,title,RESPath):
     clist =[]
     itfind=-1;
     codeItemV=codeItem[:]
+    codeItemV=["NULL"]*len(codeItem)
     for link in links:
         #print link
         #fp.write(str(link))
@@ -108,9 +109,12 @@ def MyParser(ORIPath,title,RESPath):
                 #print link.get_text("|", strip=True)
                 if (itfind!=-1):
                     print codeItem[itfind],data
-                    sql ='INSERT INTO finance values("%s","%s","%s","%s")' %( title[0:6],title[7:11],itfind,data)
-                    cursor.execute(sql)
-                    db.commit()
+                    try:
+                        sql ='INSERT INTO finance values("%s","%s","%s","%s")' %( title[0:6],title[7:11],codeItem[itfind],data)
+                        cursor.execute(sql)
+                        db.commit()
+                    except  Exception ,e:
+                        print e
                     codeItemV[itfind]= data
                     codeFind[itfind] = 1
                     itfind=-1
@@ -132,6 +136,7 @@ def MyParser(ORIPath,title,RESPath):
         if state ==2:
             break
     #print codeItemV
+    """
     fp.write("<table>")
     ccc =0 
     for a in codeItem:
@@ -147,6 +152,7 @@ def MyParser(ORIPath,title,RESPath):
         fp.write("</tr>")
         ccc=ccc+1
     fp.write("</table>")
+    """
     fp.close()
     db.close()
 
