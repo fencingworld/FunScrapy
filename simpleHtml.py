@@ -29,20 +29,26 @@ def simpleHtml(title):
 	for j in i:
 		j["src"] =""
 
+	i = soup.find_all("style")
+	for j in i:
+		j.string =""
+	i = soup.find_all("script")
+	for j in i:
+		j.string =""
+
 	print len(str(soup))
 
 
-	soup.style.extract()
-	print len(str(soup))
-	t  = soup.find(id="pf1")
-	print  t
+	#t  = soup.find(id="pf1")
+	#print  t
 	#t.img.extract()
 
-	print  t
+	#print  t
+	"""
 	matchObj = re.search(pattern, string, re.S)
 	if matchObj:
 	   	st =  matchObj.group()
-	
+	"""
 	fo = open(RESPath+"\\"+title, "w+")
 	#fo.write(st)
 	fo.write(str(soup))
@@ -62,13 +68,13 @@ for f in dirlists:
             Lparas.append(f)
             #print f
 print "ddd"
-simpleHtml("000001_2012.html")
-"""
-pool = threadpool.ThreadPool(10)  
-requests = threadpool.makeRequests(simpleHtml, Lparas)  
+#simpleHtml("000001_2012.html")
+
+pool 		= threadpool.ThreadPool(10)  
+requests 	= threadpool.makeRequests(simpleHtml, Lparas)  
 [pool.putRequest(req) for req in requests]  
 pool.wait()
-
+"""
 
 
 st = sthread("test.html")
