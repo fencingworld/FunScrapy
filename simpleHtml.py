@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import re
+import os
 import thread
 import threading
 import threadpool
@@ -38,17 +39,6 @@ def simpleHtml(title):
 
 	print len(str(soup))
 
-
-	#t  = soup.find(id="pf1")
-	#print  t
-	#t.img.extract()
-
-	#print  t
-	"""
-	matchObj = re.search(pattern, string, re.S)
-	if matchObj:
-	   	st =  matchObj.group()
-	"""
 	fo = open(RESPath+"\\"+title, "w+")
 	#fo.write(st)
 	fo.write(str(soup))
@@ -64,35 +54,12 @@ for f in dirlists:
     m = re.search("_\d{4}\.html",f)
     if m!=None:
         num = int(f[7:11])
-        if num>2011:
+        if num>2011 and os.path.exists(RESPath+"\\"+f) !=True :
             Lparas.append(f)
-            #print f
 print "ddd"
 #simpleHtml("000001_2012.html")
 
-pool 		= threadpool.ThreadPool(10)  
+pool 		= threadpool.ThreadPool(5)  
 requests 	= threadpool.makeRequests(simpleHtml, Lparas)  
 [pool.putRequest(req) for req in requests]  
 pool.wait()
-"""
-
-
-st = sthread("test.html")
-
-st.start()
-print threading.enumerate()
-print threading.activeCount()
-st.join()
-print threading.enumerate()
-print threading.activeCount()
-
-print threading.activeCount()
-t= thread.start_new_thread(simpleThead,("test.html",))
-
-print t
-while threading.activeCount()>0:
-	print threading.activeCount()
-	pass
-
-print "end"
-"""
